@@ -49,6 +49,7 @@ def xcom_parallel_dag():
         s3 =  ti.xcom_pull(key="return_value", task_ids="transform_task_s3")['output']  # type: ignore
         adls =  ti.xcom_pull(key="return_value", task_ids="transform_task_adls")['output']  # type: ignore
         api =  ti.xcom_pull(key="return_value", task_ids="transform_task_api")['output']  # type: ignore
+        print("This is the final task. All tasks have been executed.")
         return f"echo 'extracted data: {s3}, {adls}, {api}'"
 
     # Define the task dependencies
