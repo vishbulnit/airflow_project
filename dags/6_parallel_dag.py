@@ -1,0 +1,64 @@
+
+
+from airflow.sdk import dag, task # type: ignore
+from typing import Dict, List
+
+@dag(
+    dag_id = "sixth_xcom_parallel_dag"
+)
+
+def xcom_parallel_dag():
+
+    @task.python
+    def extract_task(**kwargs):
+        print("Extracting data from 3 sources")
+        ti = kwargs['ti']
+        input_data = {"S3" : [1,2,3,4,5],
+                      "ADLS" : [6,7,8,9,10],
+                      "API" : [11,12,13,14,15]
+                      }
+        ti.xcom_push(key="return_value", value=input_data)
+
+    @task.python
+    def transform_task_s3(**kwargs):
+        print("Transforming S3 data")
+        ti = kwargs['ti']
+        input = ti.xcom_pull(key="return_value", task_ids="extract_task")['S3']  # type: ignore
+        transformed_data = {"output": [x*10 for x in input]}
+        ti.xcom_push(key="return_value", value={"output": transformed_data}) # type: ignore
+
+    @task.python
+    def transform_task_adls(**kwargs):
+        print("Transforming ADLS data")
+        ti = kwargs['ti']
+        input = ti.xcom_pull(key="return_value", task_ids="extract_task")['ADLS']  # type: ignore
+        transformed_data = {"output": [x*10 for x in input]}
+        ti.xcom_push(key="return_value", value={"output": transformed_data}) # type: ignore
+  
+    @task.python
+    def transform_task_api(**kwargs):
+        print("Transforming API data")
+        ti = kwargs['ti']
+        input = ti.xcom_pull(key="return_value", task_ids="extract_task")['API']  # type: ignore
+        transformed_data = {"output": [x*10 for x in input]}
+        ti.xcom_push(key="return_value", value={"output": transformed_data}) # type: ignore
+
+    @task.bash
+    def finalize_task(**kwargs):
+        ti = kwargs['ti']
+        s3 =  ti.xcom_pull(key="return_value", task_ids="transform_task_s3")['output']  # type: ignore
+        adls =  ti.xcom_pull(key="return_value", task_ids="transform_task_adls")['output']  # type: ignore
+        api =  ti.xcom_pull(key="return_value", task_ids="transform_task_api")['output']  # type: ignore
+        return f"echo 'extracted data: {s3}, {adls}, {api}'"
+
+    # Define the task dependencies
+    extract = extract_task()
+    transform_s3 = transform_task_s3() # type: ignore
+    transform_adls = transform_task_adls() # type: ignore
+    transform_api = transform_task_api() # type: ignore
+    finalize = finalize_task()
+
+    extract >> [transform_s3, transform_adls, transform_api] >> finalize # type: ignore
+
+# Create an instance of the DAG
+xcom_parallel_dag()
