@@ -48,10 +48,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "apache-airflow" },
+    { name = "pendulum" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "apache-airflow", specifier = ">=3.3.0" }]
+requires-dist = [
+    { name = "apache-airflow", specifier = ">=3.3.0" },
+    { name = "pendulum", specifier = ">=3.2.0" },
+]
 
 [[package]]
 name = "alembic"
